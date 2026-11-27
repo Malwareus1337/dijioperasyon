@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dijipin Operasyon Takip • İş & Vardiya Paneli</title>
+  <link rel="icon" type="image/png" href="/app-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- ÜST BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand-mark" onclick="switchTab('daily')">
+        <img src="/dijipin-operasyon-logo.png" alt="Dijipin Operasyon Takip" class="brand-logo-img" />
+      </div>
+      <button type="button" class="pill-trigger" onclick="switchTab('entry')">
+        <span class="gold-dot-icon">❖</span>
+        <span>Veri Girişi</span>
+      </button>
+      <span id="cloudSyncBadge" class="status-pill pill-muted" style="cursor:pointer;" title="Firebase bulut senkronizasyon durumu">☁ Yerel Mod</span>
+      <button type="button" id="topAppUpdateBtn" class="btn-gold update-pulse-btn hidden" style="padding: 7px 14px; font-size: 12px;">🚀 Güncelle</button>
+    </div>
+
+    <div class="topbar-search">
+      <input type="text" id="globalSearchInput" placeholder="Personel veya vardiya ara..." />
+      <button type="button" class="search-icon-btn" title="Ara">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="topbar-right">
+      <div class="date-pill-group">
+        <button type="button" class="nav-arrow-btn" id="prevDayBtn" title="Önceki">&lsaquo;</button>
+        <input type="date" id="datePicker" class="date-clean-input" />
+        <button type="button" class="nav-arrow-btn" id="nextDayBtn" title="Sonraki">&rsaquo;</button>
+        <button type="button" class="today-mini-btn" id="todayBtn">Bugün</button>
+      </div>
+
+      <div class="profile-top-pill">
+        <div class="profile-top-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div class="profile-top-meta">
+          <span class="profile-top-name" id="topUserName">Operasyon Merkezi</span>
+          <span class="profile-top-sub" id="dayNameBadge">-</span>
+        </div>
+      </div>
+
+      <button type="button" class="action-pill-btn" id="openChangePassBtn" title="Kendi şifrenizi değiştirin">🔑 Şifre Değiştir</button>
+      <button type="button" class="action-pill-btn" id="logoutBtn" title="Oturumu Kapat">Çıkış Yap</button>
+    </div>
+  </header>
+
+  <!-- ANA DÜZEN: SOL MENÜ + SAĞ İÇERİK -->
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-user-card">
+        <div class="avatar-gold" id="sidebarAvatar">OP</div>
+        <div class="sidebar-user-info">
+          <strong id="sidebarUserName">Operasyon Ekibi</strong>
+          <span id="sidebarUserEmail">Vardiya & Performans</span>
+          <span class="role-mini-tag" id="sidebarUserRole">YETKİLİ</span>
+        </div>
+      </div>
+
+      <div class="nav-group open" data-group="tracking">
+        <button type="button" class="nav-group-toggle">
+          <span>Takip Paneli</span>
+          <span class="nav-chevron">&rsaquo;</span>
+        </button>
+        <div class="nav-accordion-body">
+          <div class="nav-accordion-inner">
+            <button class="nav-item active" data-tab="daily">
+              <span class="nav-icon">⊞</span>
+              <span>Günlük Takip</span>
+            </button>
+            <button class="nav-item" data-tab="weekly">
+              <span class="nav-icon">📅</span>
+              <span>Haftalık Takip</span>
+            </button>
+            <button class="nav-item" data-tab="range">
+              <span class="nav-icon">📊</span>
+              <span>Tarih Aralığı (Total)</span>
+            </button>
+            <button class="nav-item" data-tab="stock-check">
+              <span class="nav-icon">📦</span>
+              <span>Stok Kontrol</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="staff-ops">
+        <button type="button" class="nav-group-toggle">
+          <span>Personel İşlemleri</span>
+          <span class="nav-chevron">&rsaquo;</span>
+        </button>
+        <div class="nav-accordion-body">
+          <div class="nav-accordion-inner">
+            <button class="nav-item" data-tab="entry">
+              <span class="nav-icon">✎</span>
+              <span>Personel Veri Girişi</span>
+            </button>
+            <button class="nav-item" data-tab="schedule">
+              <span class="nav-icon">🗓</span>
+              <span>Haftalık İzin Planı</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-group" id="adminNavGroup" data-group="admin-ops">
+        <button type="button" class="nav-group-toggle">
+          <span>Yönetici Ayarları</span>
+          <span class="nav-chevron">&rsaquo;</span>
+        </button>
+        <div class="nav-accordion-body">
+          <div class="nav-accordion-inner">
+            <button class="nav-item" data-tab="staff-admin">
+              <span class="nav-icon">👥</span>
+              <span>Personel & Vardiya</span>
+            </button>
+            <button class="nav-item" data-tab="task-admin">
+              <span class="nav-icon">⚙</span>
+              <span>İş Kolları (Sütunlar)</span>
+            </button>
+            <button class="nav-item" data-tab="firebase">
+              <span class="nav-icon">☁</span>
+              <span>Bulut &amp; Güncelleme</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <!-- SAYFA BAŞLIĞI -->
+      <div class="page-heading">
+        <div class="heading-icon-box" id="pageHeadingIcon">⊞</div>
+        <div>
+          <h1 id="pageHeadingTitle">Günlük Takip</h1>
+          <p id="pageHeadingSub">Sabah & Öğle ve Gece vardiyalarının günlük görev ve performans durumunu görüntüleyin.</p>
+        </div>
+      </div>
+
+      <!-- ÜST BENTO KARTLAR -->
+      <section class="bento-grid">
+        <div class="bento-card" onclick="switchTab('daily')">
+          <div class="bento-top">
+            <span class="bento-label"><i class="gold-glyph">💬</i> Toplam Canlı Destek</span>
+            <span class="bento-chevron">&rsaquo;</span>
+          </div>
+          <div class="bento-value" id="kpiLiveCount">0 Görüşme</div>
+          <div class="bento-foot" id="kpiSubmitted">Seçili günde tamamlanan rapor özeti</div>
+        </div>
+
+        <div class="bento-card" onclick="scrollToElement('dayShiftSection')">
+          <div class="bento-top">
+            <span class="bento-label"><i class="gold-glyph">☀</i> Sabah & Öğle Vardiyası</span>
+            <span class="bento-chevron">&rsaquo;</span>
+          </div>
+          <div class="bento-value" id="kpiDayShift">0 Aktif</div>
+          <div class="bento-foot">09:00 - 18:00 • 09:00 - 21:00 (12s) • 12:00 - 21:00</div>
+        </div>
+
+        <div class="bento-card" onclick="scrollToElement('nightShiftSection')">
+          <div class="bento-top">
+            <span class="bento-label"><i class="gold-glyph">🌙</i> Gece Vardiyası</span>
+            <span class="bento-chevron">&rsaquo;</span>
+          </div>
+          <div class="bento-value" id="kpiNightShift">0 Aktif</div>
+          <div class="bento-foot">21:00 - 09:00 gece operasyonu personelleri</div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 1: GÜNLÜK TAKİP ================= -->
+      <section class="tab-panel active" id="tab-daily">
+        <!-- SABAH & ÖĞLE VARDİYASI KARTI -->
+        <div class="activity-card" id="dayShiftSection">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">☀</div>
+              <div>
+                <span class="eyebrow">GÜNDÜZ OPERASYONU</span>
+                <h2>Sabah & Öğle Vardiyası</h2>
+                <p>Sabah (09:00 - 18:00), Sabah 12 Saat (09:00 - 21:00) ve Öğle (12:00 - 21:00) ekibi</p>
+              </div>
+            </div>
+
+            <div class="activity-actions">
+              <div class="subfilter-group" id="daySubFilters">
+                <button class="subchip active" data-subshift="all">Tümü</button>
+                <button class="subchip" data-subshift="morning">Sabah (09-18)</button>
+                <button class="subchip" data-subshift="morning_12">Sabah 12s (09-21)</button>
+                <button class="subchip" data-subshift="afternoon">Öğle (12-21)</button>
+              </div>
+              <button class="action-pill-btn admin-only-el" onclick="switchTab('task-admin')">+ İş Kolu Ekle &rarr;</button>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="ps-table">
+              <thead id="dayShiftThead"></thead>
+              <tbody id="dayShiftTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- GECE VARDİYASI KARTI -->
+        <div class="activity-card" id="nightShiftSection" style="margin-top: 22px;">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">🌙</div>
+              <div>
+                <span class="eyebrow">GECE OPERASYONU</span>
+                <h2>Gece Vardiyası</h2>
+                <p>21:00 ile sabah 09:00 arasında görev yapan gece vardiyası personelleri</p>
+              </div>
+            </div>
+
+            <div class="activity-actions">
+              <button class="action-pill-btn" onclick="switchTab('entry')">Veri Girişi Yap &rarr;</button>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="ps-table">
+              <thead id="nightShiftThead"></thead>
+              <tbody id="nightShiftTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: HAFTALIK TAKİP ================= -->
+      <section class="tab-panel" id="tab-weekly">
+        <div class="week-toolbar">
+          <div class="week-range-label" id="weekRangeText">Haftalık Görünüm</div>
+          <div class="week-nav-btns">
+            <button class="action-pill-btn" id="prevWeekBtn">&larr; Önceki Hafta</button>
+            <button class="action-pill-btn" id="currentWeekBtn">Bu Hafta</button>
+            <button class="action-pill-btn" id="nextWeekBtn">Sonraki Hafta &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Haftalık Sabah & Öğle -->
+        <div class="activity-card">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">☀</div>
+              <div>
+                <span class="eyebrow">HAFTALIK GÜNDÜZ ÖZETİ</span>
+                <h2>Sabah & Öğle Vardiyası — Haftalık Takip</h2>
+                <p>Gün hücresine tıklayarak o günün detaylı tablosuna geçiş yapabilirsiniz.</p>
+              </div>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="ps-table">
+              <thead id="weeklyDayThead"></thead>
+              <tbody id="weeklyDayTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Haftalık Gece -->
+        <div class="activity-card" style="margin-top: 22px;">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">🌙</div>
+              <div>
+                <span class="eyebrow">HAFTALIK GECE ÖZETİ</span>
+                <h2>Gece Vardiyası — Haftalık Takip</h2>
+                <p>21:00 - 09:00 vardiyasının Pazartesi - Pazar görev ve izin özeti</p>
+              </div>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="ps-table">
+              <thead id="weeklyNightThead"></thead>
+              <tbody id="weeklyNightTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2.5: TARİH ARALIĞI (TOTAL TAKİP) ================= -->
+      <section class="tab-panel" id="tab-range">
+        <div class="activity-card range-filter-card">
+          <div class="range-filter-bar">
+            <div class="range-inputs">
+              <div class="field">
+                <label for="rangeStartInput">Başlangıç Tarihi</label>
+                <input type="date" id="rangeStartInput" class="ps-input" />
+              </div>
+              <div class="field">
+                <label for="rangeEndInput">Bitiş Tarihi</label>
+                <input type="date" id="rangeEndInput" class="ps-input" />
+              </div>
+              <button type="button" class="btn-gold" id="applyRangeBtn">Toplamları Getir</button>
+            </div>
+
+            <div class="range-presets">
+              <button type="button" class="subchip" data-preset="today">Bugün</button>
+              <button type="button" class="subchip active" data-preset="7d">Son 7 Gün</button>
+              <button type="button" class="subchip" data-preset="14d">Son 14 Gün</button>
+              <button type="button" class="subchip" data-preset="30d">Son 30 Gün</button>
+              <button type="button" class="subchip" data-preset="month">Bu Ay</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seçili Tarih Aralığı Genel Özet -->
+        <div class="range-kpi-strip">
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Seçili Aralık Toplam Canlı</span>
+            <strong class="mini-stat-val gold-text" id="rangeTotalLive">0 Canlı Bakıldı</strong>
+            <span class="mini-stat-sub" id="rangeDateSpanLabel">-</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Kapsanan Süre</span>
+            <strong class="mini-stat-val" id="rangeDayCountVal">0 Gün</strong>
+            <span class="mini-stat-sub">Başlangıç ve bitiş dahil</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Girilen Rapor / Aktif Mesai</span>
+            <strong class="mini-stat-val emerald-text" id="rangeReportRatio">0 / 0 Mesai</strong>
+            <span class="mini-stat-sub">İzin günleri hariç toplam vardiya</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Toplam İzin Kullanımı</span>
+            <strong class="mini-stat-val" id="rangeTotalLeave">0 İzin Günü</strong>
+            <span class="mini-stat-sub">Tüm personellerin izin toplamı</span>
+          </div>
+        </div>
+
+        <!-- Tarih Aralığı: Sabah & Öğle Vardiyası Total -->
+        <div class="activity-card">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">☀</div>
+              <div>
+                <span class="eyebrow">TARİH ARALIĞI KÜMÜLATİF TOPLAM</span>
+                <h2>Sabah & Öğle Vardiyası — Total Sonuçlar</h2>
+                <p>Seçilen tarih aralığındaki toplam canlı destek sayıları ve görev yapılma gün sayıları</p>
+              </div>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="ps-table">
+              <thead id="rangeDayThead"></thead>
+              <tbody id="rangeDayTbody"></tbody>
+              <tfoot id="rangeDayTfoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tarih Aralığı: Gece Vardiyası Total -->
+        <div class="activity-card" style="margin-top: 22px;">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">🌙</div>
+              <div>
+                <span class="eyebrow">TARİH ARALIĞI KÜMÜLATİF TOPLAM</span>
+                <h2>Gece Vardiyası — Total Sonuçlar</h2>
+                <p>21:00 - 09:00 gece ekibinin seçilen tarih aralığındaki toplam performansı</p>
+              </div>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="ps-table">
+              <thead id="rangeNightThead"></thead>
+              <tbody id="rangeNightTbody"></tbody>
+              <tfoot id="rangeNightTfoot"></tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: PERSONEL VERİ GİRİŞİ ================= -->
+      <section class="tab-panel" id="tab-entry">
+        <div class="activity-card form-panel-card">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">✎</div>
+              <div>
+                <span class="eyebrow">PERSONEL BİLDİRİM EKRANI</span>
+                <h2>Günlük İş & Görev Girişi</h2>
+                <p>Personel vardiyasında tamamladığı canlı destek sayısını ve görev durumlarını buradan kaydeder.</p>
+              </div>
+            </div>
+            <button type="button" class="action-pill-btn" id="markAllDoneBtn">✓ Tümünü Tamamlandı İşaretle</button>
+          </div>
+
+          <div class="card-body-pad">
+            <form id="staffEntryForm">
+              <div class="form-row-2">
+                <div class="field">
+                  <label for="entryStaffSelect">Personel Seçin</label>
+                  <select id="entryStaffSelect" class="ps-input" required></select>
+                </div>
+                <div class="field">
+                  <label>Vardiya & Mesai Durumu</label>
+                  <div id="entryStaffInfo" class="ps-readonly-box">-</div>
+                </div>
+              </div>
+
+              <div id="leaveWarningBox" class="ps-alert-gold hidden">
+                <span>Bu personel seçili tarihte <strong>İZİNLİ</strong> görünüyor.</span>
+                <button type="button" class="action-pill-btn admin-only-el" id="overrideWorkBtn">Mesaiye Geldi Olarak Aç</button>
+              </div>
+
+              <div id="dateRestrictionBox" class="ps-alert-gold hidden">
+                <span>Personel hesapları yalnızca <strong>bugünün</strong> verisini girebilir veya düzenleyebilir.</span>
+                <button type="button" class="action-pill-btn" id="jumpTodayFromEntryBtn">Bugüne Geç</button>
+              </div>
+
+              <div id="entryExistsBanner" class="ps-alert-emerald hidden">
+                <div>
+                  <strong>✓ Bu gün için veri girişi tamamlandı.</strong>
+                  <div style="font-size:12px; opacity:0.9; margin-top:2px;" id="entryExistsSub">Tekrar yeni kayıt açılamaz; mevcut raporu düzenlemek için butona tıklayın.</div>
+                </div>
+                <button type="button" class="btn-gold" id="unlockEditBtn">✎ Raporu Düzenle</button>
+              </div>
+
+              <!-- VARDİYA KATILIM & ÇIKIŞ DURUMU -->
+              <div class="attendance-grid">
+                <div class="attendance-box" id="lateArrivalBox">
+                  <div class="attendance-head">
+                    <div>
+                      <h4>Vardiyaya Giriş Durumu</h4>
+                      <span>Mesai başlangıç saatine uyum</span>
+                    </div>
+                    <label class="toggle-pill-check">
+                      <input type="checkbox" id="lateArrivalCheck" />
+                      <span class="toggle-pill-ui pill-ui-coral">⚠ Geç Katıldım</span>
+                    </label>
+                  </div>
+                  <div id="lateArrivalDetailWrap" class="hidden" style="margin-top: 10px;">
+                    <input type="text" id="lateArrivalNote" class="ps-input" style="width:100%;" placeholder="Gecikme süresi veya nedeni (Örn: 25 dk / 09:25 trafik)" />
+                  </div>
+                </div>
+
+                <div class="attendance-box" id="lateExitBox">
+                  <div class="attendance-head">
+                    <div>
+                      <h4>Vardiyadan Çıkış Durumu</h4>
+                      <span>Mesai bitiş / devir teslim durumu</span>
+                    </div>
+                    <label class="toggle-pill-check">
+                      <input type="checkbox" id="lateExitCheck" />
+                      <span class="toggle-pill-ui pill-ui-gold">+ Geç Çıktım (Ek Mesai)</span>
+                    </label>
+                  </div>
+                  <div id="lateExitDetailWrap" class="hidden" style="margin-top: 10px;">
+                    <input type="text" id="lateExitNote" class="ps-input" style="width:100%;" placeholder="Fazla kalma süresi / çıkış saati (Örn: 45 dk / 18:45)" />
+                  </div>
+                </div>
+              </div>
+
+              <div id="dynamicTaskInputs" class="task-form-grid"></div>
+
+              <div class="field" style="margin-top: 18px;">
+                <label for="entryNote">Vardiya Devir / Açıklama Notu (Opsiyonel)</label>
+                <input type="text" id="entryNote" class="ps-input" placeholder="Örn: Gece vardiyasına devir notu, yoğunluk bilgisi..." />
+              </div>
+
+              <div style="margin-top: 20px; display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="action-pill-btn hidden" id="cancelEditBtn">Vazgeç</button>
+                <button type="submit" class="btn-gold" id="entrySubmitBtn">Günlük Raporu Kaydet</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: HAFTALIK İZİN PLANI ================= -->
+      <section class="tab-panel" id="tab-schedule">
+        <div class="activity-card">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">🗓</div>
+              <div>
+                <span class="eyebrow">İZİN YÖNETİMİ</span>
+                <h2>Haftalık Sabit İzin Takvimi</h2>
+                <p>Hücrelere tıklayarak personelin izin günlerini değiştirin. İzinli günlerde tabloda otomatik <strong>İZİNLİ</strong> yazar.</p>
+              </div>
+            </div>
+
+            <div class="activity-actions">
+              <button type="button" class="action-pill-btn" id="schedPrevWeekBtn">&larr; Önceki Hafta</button>
+              <button type="button" class="action-pill-btn" id="schedCurrWeekBtn">Bu Hafta</button>
+              <button type="button" class="action-pill-btn" id="schedNextWeekBtn">Sonraki Hafta &rarr;</button>
+              <button type="button" class="btn-gold" id="exportScheduleBtn">🖨 Çıktı Al</button>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="ps-table">
+              <thead id="scheduleThead"></thead>
+              <tbody id="scheduleTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: PERSONEL & VARDİYA YÖNETİMİ ================= -->
+      <section class="tab-panel" id="tab-staff-admin">
+        <div class="activity-card">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">👥</div>
+              <div>
+                <span class="eyebrow">YÖNETİCİ PANELİ</span>
+                <h2>Personel & Vardiya Tanımları</h2>
+                <p>Sabah (09-18), Sabah 12 Saat (09-21), Öğle (12-21), Gece (21-09) veya kişiye özel mesai saati belirleyin.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body-pad">
+            <form id="addStaffForm" class="staff-create-grid">
+              <div class="field">
+                <label>İsim Soyisim</label>
+                <input type="text" id="newStaffName" class="ps-input" placeholder="Örn: Kaan Yılmaz" required />
+              </div>
+              <div class="field">
+                <label>E-posta Adresi</label>
+                <input type="email" id="newStaffEmail" class="ps-input" placeholder="kaan@operasyon.com" required />
+              </div>
+              <div class="field">
+                <label>Giriş Şifresi</label>
+                <input type="password" id="newStaffPassword" class="ps-input" placeholder="En az 4 karakter" required />
+              </div>
+              <div class="field">
+                <label>Yetki Rolü</label>
+                <select id="newStaffRole" class="ps-input">
+                  <option value="staff">Personel (Kullanıcı)</option>
+                  <option value="admin">Yetkili (Yönetici)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Vardiya Seçimi</label>
+                <select id="newStaffShift" class="ps-input">
+                  <option value="morning">Sabah (09:00 - 18:00)</option>
+                  <option value="morning_12">Sabah 12 Saat (09:00 - 21:00)</option>
+                  <option value="afternoon">Öğle (12:00 - 21:00)</option>
+                  <option value="night">Gece (21:00 - 09:00)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Özel Saat (Opsiyonel)</label>
+                <input type="text" id="newStaffCustomHours" class="ps-input" placeholder="Örn: 08:30 - 20:30" />
+              </div>
+              <div class="field" style="justify-content:flex-end;">
+                <button type="submit" class="btn-gold">+ Personel Ekle</button>
+              </div>
+            </form>
+
+            <div class="admin-rows" id="adminStaffList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 6: İŞ KOLLARI (SÜTUNLAR) ================= -->
+      <section class="tab-panel" id="tab-task-admin">
+        <div class="activity-card">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">⚙</div>
+              <div>
+                <span class="eyebrow">TABLO ÖZELLEŞTİRME</span>
+                <h2>Ekstra İş Kolu & Görev Sütunları</h2>
+                <p>Yönetici olarak takip tablosuna yeni görev sütunları ekleyebilir veya kaldırabilirsiniz.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body-pad">
+            <form id="addTaskForm" class="form-row-4">
+              <div class="field">
+                <label>Görev / İş Kolu Başlığı</label>
+                <input type="text" id="newTaskTitle" class="ps-input" placeholder="Örn: Telegram Kontrol" required />
+              </div>
+              <div class="field">
+                <label>Giriş Tipi</label>
+                <select id="newTaskType" class="ps-input">
+                  <option value="bakildi">Bakıldı / Bakılmadı</option>
+                  <option value="yapildi">Yapıldı / Yapılmadı</option>
+                  <option value="yapildi_not">Yapıldı + Detay Notu (Iframe Görüntüleme)</option>
+                  <option value="count_bakildi">Sayı + Durum (Örn: 150 Canlı Bakıldı)</option>
+                  <option value="text">Serbest Metin</option>
+                </select>
+              </div>
+              <div class="field" id="unitFieldGroup">
+                <label>Birim Etiketi</label>
+                <input type="text" id="newTaskUnit" class="ps-input" value="Canlı Bakıldı" />
+              </div>
+              <div class="field" style="justify-content:flex-end;">
+                <button type="submit" class="btn-gold">+ Sütun Ekle</button>
+              </div>
+            </form>
+
+            <div class="admin-rows" id="adminTaskList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 7: PERSONEL PROFİLİ & İSTATİSTİKLER (YETKİLİ) ================= -->
+      <section class="tab-panel" id="tab-profile">
+        <!-- Profil Üst Kartı -->
+        <div class="activity-card profile-hero-card">
+          <div class="profile-hero-left">
+            <div class="profile-big-avatar" id="profAvatar">OP</div>
+            <div class="profile-hero-meta">
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <h2 id="profName">-</h2>
+                <span class="role-mini-tag" id="profRoleTag">PERSONEL</span>
+              </div>
+              <div class="prof-subline" id="profEmailShift">-</div>
+              <div class="prof-offdays" id="profOffDaysText">-</div>
+            </div>
+          </div>
+
+          <div class="profile-hero-right">
+            <select id="profileStaffSwitcher" class="ps-input" title="Başka bir personelin profiline geç"></select>
+            <button type="button" class="action-pill-btn" id="backFromProfileBtn">&larr; Tabloya Dön</button>
+          </div>
+        </div>
+
+        <!-- Genel İstatistik Kartları -->
+        <div class="range-kpi-strip" style="margin-top: 18px;">
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Toplam Canlı Destek (Tüm Zamanlar)</span>
+            <strong class="mini-stat-val gold-text" id="profAllLive">0</strong>
+            <span class="mini-stat-sub" id="profAvgLive">Ortalama: 0 / rapor</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">En Yüksek Günlük Rekor</span>
+            <strong class="mini-stat-val emerald-text" id="profBestDay">0</strong>
+            <span class="mini-stat-sub" id="profBestDate">-</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Toplam Rapor & Ekstra Görev</span>
+            <strong class="mini-stat-val" id="profReportsCount">0 Rapor</strong>
+            <span class="mini-stat-sub" id="profExtraCount">0 Ekstra Görev Yapıldı</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Vardiya Katılım & Mesai Özeti</span>
+            <strong class="mini-stat-val" id="profAttendanceVal">-</strong>
+            <span class="mini-stat-sub">Tüm zamanlar giriş / çıkış kaydı</span>
+          </div>
+        </div>
+
+        <!-- Görev Bazlı Başarı Dağılımı -->
+        <div class="activity-card" style="margin-bottom: 20px;">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">📈</div>
+              <div>
+                <span class="eyebrow">SEÇİLİ DÖNEM PERFORMANS KIRILIMI</span>
+                <h2>Görev Bazlı İstatistikler</h2>
+                <p id="profPeriodSpanSub">Seçili tarih aralığındaki iş kolu tamamlama oranları</p>
+              </div>
+            </div>
+
+            <div class="range-inputs">
+              <input type="date" id="profStartInput" class="ps-input" />
+              <input type="date" id="profEndInput" class="ps-input" />
+              <button type="button" class="btn-gold" id="profFilterBtn">Filtrele</button>
+            </div>
+          </div>
+
+          <div class="prof-breakdown-grid" id="profBreakdownGrid"></div>
+        </div>
+
+        <!-- Gün Gün Girilen Veriler Tablosu -->
+        <div class="activity-card">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">🗂</div>
+              <div>
+                <span class="eyebrow">GÜNLÜK ARŞİV</span>
+                <h2>Gün Gün Girilen Veriler</h2>
+                <p>Personelin gün bazında girdiği tüm görev durumları, canlı destek sayıları ve ekstra görev notları</p>
+              </div>
+            </div>
+
+            <label class="toggle-pill-check">
+              <input type="checkbox" id="profOnlyEnteredCheck" />
+              <span class="toggle-pill-ui pill-ui-gold">✓ Sadece Rapor Girilen Günler</span>
+            </label>
+          </div>
+
+          <div class="table-scroll">
+            <table class="ps-table">
+              <thead id="profDailyThead"></thead>
+              <tbody id="profDailyTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 8: FIREBASE BULUT SENKRONİZASYON ================= -->
+      <section class="tab-panel" id="tab-firebase">
+        <div class="activity-card">
+          <div class="activity-header">
+            <div class="activity-title-wrap">
+              <div class="section-icon-box">☁</div>
+              <div>
+                <span class="eyebrow">ÇOKLU BİLGİSAYAR CANLI SENKRON</span>
+                <h2>Firebase Realtime Database Bağlantısı</h2>
+                <p>Ofisteki tüm .exe uygulamalarının aynı veritabanını anlık senkron kullanmasını sağlar.</p>
+              </div>
+            </div>
+            <button type="button" class="action-pill-btn" id="forceResyncBtn">↻ Şimdi Eşitle</button>
+          </div>
+
+          <div class="card-body-pad">
+            <div id="fbStatusAlert" class="ps-alert-gold" style="margin-top:0; margin-bottom:20px;">
+              <div id="fbStatusText">Durum kontrol ediliyor...</div>
+            </div>
+
+            <div class="task-field-card" style="margin-bottom:20px;">
+              <h4>Ücretsiz 1 Dakikalık Firebase Kurulum Adımları</h4>
+              <ol style="padding-left:18px; color:#cbd5e1; font-size:13px; line-height:1.75; margin-top:4px;">
+                <li><strong>console.firebase.google.com</strong> adresinden ücretsiz bir proje oluşturun.</li>
+                <li>Sol menüden <strong>Build &rarr; Realtime Database</strong> bölümüne girip <strong>Create Database</strong> butonuna tıklayın (Başlangıç için <em>Start in test mode</em> seçebilirsiniz veya kural şifresi kullanabilirsiniz).</li>
+                <li>Veritabanı ekranının üst kısmındaki <code>https://...-default-rtdb.firebaseio.com</code> (veya <code>.firebasedatabase.app</code>) adresini kopyalayıp aşağıdaki alana yapıştırın.</li>
+                <li>Bağlandığınız anda mevcut tüm personelleriniz, şifreler ve geçmiş raporlar otomatik olarak Firebase'e aktarılır!</li>
+              </ol>
+            </div>
+
+            <form id="firebaseConfigForm" class="form-row-2">
+              <div class="field">
+                <label for="fbDbUrlInput">Firebase Realtime Database URL (veya firebaseConfig Kodu)</label>
+                <input type="text" id="fbDbUrlInput" class="ps-input" placeholder="https://proje-adi-default-rtdb.europe-west1.firebasedatabase.app" required />
+              </div>
+              <div class="field">
+                <label for="fbSecretInput">Database Secret / Gizli Anahtar (Test modundaysa boş bırakın)</label>
+                <input type="password" id="fbSecretInput" class="ps-input" placeholder="Opsiyonel (Proje Ayarları > Hizmet Hesapları > DB Secrets)" />
+              </div>
+              <div class="field" style="grid-column: 1 / -1; flex-direction:row; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:6px;">
+                <span style="font-size:12px; color:#94a3b8;">Not: Ayarı kaydettikten sonra oluşan <code>firebase-config.json</code> dosyasını diğer bilgisayarlarda <code>.exe</code> dosyasının yanına koyabilir veya aynı ayar ekranından bir kez girebilirsiniz.</span>
+                <button type="submit" class="btn-gold" id="fbSaveBtn">☁ Bağlan & Verileri Senkronla</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="activity-card" style="margin-top: 20px;">
+          <div class="activity-header">
+            <div class="activity-title">
+              <span class="gold-glyph">🚀</span>
+              <h3>Uzaktan Uygulama Güncelleme Yayınla (Tüm .exe'ler)</h3>
+            </div>
+            <span class="status-pill pill-gold" id="currentAppVerLabel">Sürüm: v1.0.0</span>
+          </div>
+
+          <div class="ps-form">
+            <div class="task-field-card" style="margin-bottom:18px;">
+              <h4>Nasıl Çalışır?</h4>
+              <ol style="padding-left:18px; color:#cbd5e1; font-size:13px; line-height:1.75; margin-top:4px;">
+                <li>Yeni derlenen tek parça <code>Dijipin-Operasyon-Takip.exe</code> dosyasını doğrudan indirilebilir bir adrese yükleyin (Örn: GitHub Releases <code>.exe</code> linki, kendi sunucunuz/CDN veya Dropbox <code>?dl=1</code> doğrudan linki).</li>
+                <li>Aşağıya bir üst sürüm numarasını (Örn: <code>1.0.1</code>) ve doğrudan <code>.exe</code> indirme linkini yazıp <strong>Güncellemeyi Yayınla</strong> butonuna basın.</li>
+                <li>Firebase üzerinden açık olan tüm ofis bilgisayarlarının üst barında anında <strong>🚀 Güncelle (v1.0.1)</strong> butonu belirir; tıklayan personelin uygulaması yeni <code>.exe</code>'yi indirip kendini otomatik yenileyerek yeniden başlar.</li>
+              </ol>
+            </div>
+
+            <form id="publishUpdateForm" class="form-row-2">
+              <div class="field">
+                <label for="pubVersionInput">Yeni Sürüm Numarası</label>
+                <input type="text" id="pubVersionInput" class="ps-input" placeholder="Örn: 1.0.1" required />
+              </div>
+              <div class="field">
+                <label for="pubNotesInput">Güncelleme Notu (Opsiyonel)</label>
+                <input type="text" id="pubNotesInput" class="ps-input" placeholder="Örn: Stok kontrol ve performans iyileştirmesi" />
+              </div>
+              <div class="field" style="grid-column: 1 / -1;">
+                <label for="pubUrlInput">Doğrudan .exe İndirme Linki (Direct Download URL)</label>
+                <input type="url" id="pubUrlInput" class="ps-input" placeholder="https://.../Dijipin-Operasyon-Takip.exe" />
+              </div>
+              <div class="field" style="grid-column: 1 / -1; flex-direction:row; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:6px;">
+                <span id="pubStatusHint" style="font-size:12px; color:#94a3b8;">İpucu: Güncelleme butonunu gizlemek isterseniz link alanını boş bırakıp kaydedebilirsiniz.</span>
+                <button type="submit" class="btn-gold" id="pubSaveBtn">🚀 Güncellemeyi Tüm Bilgisayarlara Gönder</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 9: DİJİPİN CANLI STOK KONTROL ================= -->
+      <section class="tab-panel" id="tab-stock-check">
+        <div class="activity-card" style="margin-bottom: 18px;">
+          <div class="range-filter-bar">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <div class="subfilter-group" id="stockGroupFilters">
+                <button type="button" class="subchip active" data-stockgroup="all">Tümü</button>
+                <button type="button" class="subchip" data-stockgroup="Topup">Topup</button>
+                <button type="button" class="subchip" data-stockgroup="E-Pin">E-Pin</button>
+              </div>
+              <input
+                type="text"
+                id="stockSearchInput"
+                class="ps-input"
+                style="min-width:250px;"
+                placeholder="Kategori veya stoksuz ürün ara..."
+              />
+            </div>
+
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span id="stockLastScanLabel" style="font-size:12px; color:#94a3b8;">Henüz tarama yapılmadı</span>
+              <button type="button" class="btn-gold" id="fetchOutOfStockBtn">🔍 Stoğu Biten Ürünleri Çek</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stok Tarama Özet Kartları -->
+        <div class="range-kpi-strip hidden" id="stockKpiStrip">
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Taranan Kategori & Alt Kategori</span>
+            <strong class="mini-stat-val" id="stkScannedCats">0</strong>
+            <span class="mini-stat-sub" id="stkScannedSubs">0 alt kategori kontrol edildi</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Kontrol Edilen Toplam Ürün</span>
+            <strong class="mini-stat-val gold-text" id="stkScannedProds">0 Ürün</strong>
+            <span class="mini-stat-sub">Topup ve E-Pin tüm paketler</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Stoğu Olmayan Kategori</span>
+            <strong class="mini-stat-val" style="color:#ef4444;" id="stkAffectedCats">0 Kategori</strong>
+            <span class="mini-stat-sub">En az 1 ürünü tükenen kategoriler</span>
+          </div>
+          <div class="mini-stat-card">
+            <span class="mini-stat-label">Toplam Stoğu Biten Ürün</span>
+            <strong class="mini-stat-val" style="color:#ef4444;" id="stkTotalZero">0 Ürün</strong>
+            <span class="mini-stat-sub" id="stkDurationText">-</span>
+          </div>
+        </div>
+
+        <!-- Kategori Listesi (Tıklanınca İçindeki Stoksuz Ürünler Açılır) -->
+        <div id="stockCategoriesContainer" class="stock-cat-list">
+          <div class="activity-card" style="padding: 38px 24px; text-align:center;">
+            <div style="font-size: 32px; margin-bottom: 10px;">📦</div>
+            <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 6px;">Dijipin Canlı Stok Tarayıcı</h3>
+            <p style="color:#94a3b8; font-size:13px; max-width:520px; margin:0 auto;">
+              Sağ üstteki <strong>"🔍 Stoğu Biten Ürünleri Çek"</strong> butonuna tıkladığınızda <code>dijipin.com</code> üzerindeki tüm <strong>Topup</strong> ve <strong>E-Pin</strong> kategorileri (alt kategorileriyle birlikte) taranır ve yalnızca stoğu tükenen ürünlere sahip kategoriler listelenir.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- EKSTRA GÖREV NOTU IFRAME PENCERESİ -->
+  <div id="noteIframeOverlay" class="iframe-modal-overlay hidden" onclick="closeNoteIframe(event)">
+    <div class="iframe-modal-card" onclick="event.stopPropagation()">
+      <div class="iframe-modal-bar">
+        <span class="iframe-modal-title">📝 Ekstra Görev İş Detayı</span>
+        <button type="button" class="mini-btn" onclick="closeNoteIframe()">✕ Kapat</button>
+      </div>
+      <iframe id="noteViewerFrame" class="note-iframe" title="Ekstra Görev Detay Notu"></iframe>
+    </div>
+  </div>
+
+  <!-- ŞİFRE DEĞİŞTİRME PENCERESİ -->
+  <div id="changePasswordOverlay" class="iframe-modal-overlay hidden" onclick="closeChangePasswordModal()">
+    <div class="iframe-modal-card" style="max-width: 420px;" onclick="event.stopPropagation()">
+      <div class="iframe-modal-bar">
+        <span class="iframe-modal-title">🔑 Şifre Değiştir</span>
+        <button type="button" class="mini-btn" onclick="closeChangePasswordModal()">✕ Kapat</button>
+      </div>
+      <div class="card-body-pad">
+        <form id="changePasswordForm">
+          <div class="field" style="margin-bottom: 14px;">
+            <label for="cpCurrentInput">Mevcut Şifreniz</label>
+            <input type="password" id="cpCurrentInput" class="ps-input" placeholder="••••••••" required />
+          </div>
+          <div class="field" style="margin-bottom: 14px;">
+            <label for="cpNewInput">Yeni Şifre</label>
+            <input type="password" id="cpNewInput" class="ps-input" placeholder="En az 4 karakter" required />
+          </div>
+          <div class="field" style="margin-bottom: 18px;">
+            <label for="cpConfirmInput">Yeni Şifre (Tekrar)</label>
+            <input type="password" id="cpConfirmInput" class="ps-input" placeholder="Yeni şifreyi tekrar girin" required />
+          </div>
+          <button type="submit" class="btn-gold" style="width: 100%;" id="cpSubmitBtn">Şifreyi Güncelle</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giriş Yap • Dijipin Operasyon Takip</title>
+  <link rel="icon" type="image/png" href="/app-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: radial-gradient(circle at 50% 0%, rgba(245, 184, 0, 0.08), transparent 45%), var(--bg-main);
+    }
+    .login-card {
+      width: 100%;
+      max-width: 430px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 32px 28px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+    .login-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 26px;
+    }
+    .login-brand .brand-mark {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .login-brand h1 {
+      font-size: 19px;
+      font-weight: 800;
+    }
+    .login-brand p {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .login-error {
+      background: var(--coral-soft);
+      border: 1px solid var(--coral-border);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .demo-accounts {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .demo-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .demo-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .demo-pill {
+      background: #0e1118;
+      border: 1px solid var(--border-light);
+      color: var(--text-secondary);
+      padding: 9px 10px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 11.5px;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .demo-pill:hover {
+      border-color: var(--gold-border);
+      color: var(--text-white);
+    }
+    .demo-pill strong {
+      display: block;
+      color: var(--gold);
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-brand">
+        <img src="/dijipin-operasyon-logo.png" alt="Dijipin Operasyon Takip" style="width: 100%; max-width: 315px; height: auto; margin-bottom: 16px;" />
+        <h1>Operasyon Giriş Paneli</h1>
+        <p>Devam etmek için yetkili veya personel hesabınızla giriş yapın.</p>
+      </div>
+
+      <div id="loginError" class="login-error hidden"></div>
+
+      <form id="loginForm">
+        <div class="field" style="margin-bottom: 14px;">
+          <label for="loginEmail">E-posta Adresi</label>
+          <input type="email" id="loginEmail" class="ps-input" placeholder="isim@dijipin.com" required autofocus />
+        </div>
+
+        <div class="field" style="margin-bottom: 20px;">
+          <label for="loginPassword">Şifre</label>
+          <input type="password" id="loginPassword" class="ps-input" placeholder="••••••••" required />
+        </div>
+
+        <button type="submit" class="btn-gold" style="width: 100%;" id="loginSubmitBtn">Giriş Yap</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errBox = document.getElementById('loginError');
+      const btn = document.getElementById('loginSubmitBtn');
+      errBox.classList.add('hidden');
+      btn.disabled = true;
+      btn.textContent = 'Giriş yapılıyor...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('loginEmail').value,
+            password: document.getElementById('loginPassword').value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Giriş başarısız');
+        window.location.href = '/';
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Giriş Yap';
+      }
+    });
+  </script>
+</body>
+</html>

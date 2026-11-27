@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-update/
+release/
+release-*/
+data/
+firebase-config.json
+*.log
